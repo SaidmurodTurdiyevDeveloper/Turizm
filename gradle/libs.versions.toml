@@ -4,6 +4,7 @@ accompanistSystemuicontroller = "0.16.0"
 agp = "8.6.1"
 coilCompose = "3.0.3"
 compose = "1.0.0-beta01"
+firebaseBom = "33.6.0"
 gson = "2.11.0"
 hiltAndroid = "2.51.1"
 kotlin = "1.9.0"
@@ -21,6 +22,7 @@ playServicesMaps = "18.0.0"
 playServicesTasks = "18.2.0"
 voyagerVersion = "1.1.0-beta02"
 playServicesLocation = "21.3.0"
+firebaseFirestore = "25.1.1"
 
 [libraries]
 accompanist-coil = { module = "com.google.accompanist:accompanist-coil", version.ref = "accompanistSystemuicontroller" }
@@ -30,6 +32,7 @@ accompanist-systemuicontroller = { module = "com.google.accompanist:accompanist-
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coilCompose" }
 compose = { module = "com.github.bumptech.glide:compose", version.ref = "compose" }
+firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }
 gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
 hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hiltAndroid" }
 hilt-android-compiler = { module = "com.google.dagger:hilt-android-compiler", version.ref = "hiltAndroid" }
@@ -58,6 +61,7 @@ voyager-screenmodel = { module = "cafe.adriel.voyager:voyager-screenmodel", vers
 voyager-tab-navigator = { module = "cafe.adriel.voyager:voyager-tab-navigator", version.ref = "voyagerVersion" }
 voyager-transitions = { module = "cafe.adriel.voyager:voyager-transitions", version.ref = "voyagerVersion" }
 play-services-location = { group = "com.google.android.gms", name = "play-services-location", version.ref = "playServicesLocation" }
+firebase-firestore = { group = "com.google.firebase", name = "firebase-firestore", version.ref = "firebaseFirestore" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -48,8 +49,7 @@ import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.bumptech.glide.integration.compose.placeholder
 import us.smt.turizm.R
-import us.smt.turizm.domen.model.PlaceData
-import us.smt.turizm.domen.model.getRandImage
+import us.smt.turizm.domen.model.PlaceDetails
 
 class DetailsScreen(private val id: String) : Screen {
     @Composable
@@ -70,102 +70,115 @@ class DetailsScreen(private val id: String) : Screen {
 @OptIn(ExperimentalGlideComposeApi::class)
 @Composable
 fun DetailScreen(
-    data: PlaceData?,
+    data: PlaceDetails?,
     onAction: (DetailsIntent) -> Unit
 ) {
     val context = LocalContext.current
-    Box(modifier = Modifier.fillMaxSize()) {
-        Box {
-            GlideImage(
-                model = data?.imageLink ?: "",
-                loading = placeholder(data?.image ?: getRandImage()),
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(330.dp)
-            )
-            Text(
-                text = data?.name ?: "",
-                color = Color.White,
-                style = MaterialTheme.typography.headlineMedium.copy(fontSize = 24.sp, fontWeight = FontWeight.Bold),
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(16.dp)
-                    .offset(y = (-50).dp)
-            )
-        }
 
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(
-                top = 300.dp
-            )
-        ) {
-            item {
-                Column(
+    Box(modifier = Modifier
+        .fillMaxSize()
+        .background(Color.White)) {
+        if (data == null) {
+            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+        } else {
+
+            Box {
+                GlideImage(
+                    model = data.imageLink ?: "",
+                    loading = placeholder(data.image),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
                     modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Color.White,
-                            shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
-                        )
+                        .fillMaxWidth()
+                        .height(330.dp)
+                )
+                Text(
+                    text = data.name,
+                    color = Color.White,
+                    style = MaterialTheme.typography.headlineMedium.copy(fontSize = 24.sp, fontWeight = FontWeight.Bold),
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
                         .padding(16.dp)
-                ) {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = "📍 ${data?.address}",
-                        style = MaterialTheme.typography.bodyMedium.copy(fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    RatingBar(rating = (data?.rating ?: 0.0).toFloat())
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = "About",
-                        style = MaterialTheme.typography.headlineMedium.copy(fontSize = 24.sp, fontWeight = FontWeight.Bold)
-                    )
-                    Text(
-                        text = data?.about ?: "",
-                        style = MaterialTheme.typography.bodyMedium.copy(fontSize = 16.sp)
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = "Including Services",
-                        style = MaterialTheme.typography.headlineMedium.copy(fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = data?.service ?: "",
-                        style = MaterialTheme.typography.bodyMedium.copy(fontSize = 16.sp)
-                    )
+                        .offset(y = (-50).dp)
+                )
+            }
 
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = "Distance",
-                        style = MaterialTheme.typography.headlineMedium.copy(fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = data?.distance.toString()+" km",
-                        style = MaterialTheme.typography.bodyMedium.copy(fontSize = 16.sp)
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = data?.lat.toString()+" - "+data?.lang.toString(),
-                        style = MaterialTheme.typography.bodyMedium.copy(fontSize = 16.sp)
-                    )
-                    if (data?.isCanBron == true) {
-                        Spacer(modifier = Modifier.height(56.dp))
-                        Button(
-                            onClick = {
-                                Toast.makeText(context, "Bron now", Toast.LENGTH_SHORT).show()
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(56.dp)
-                        ) {
-                            Text(text = "Book Now", color = Color.White)
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(
+                    top = 300.dp
+                )
+            ) {
+                item {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Color.White,
+                                shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
+                            )
+                            .padding(16.dp)
+                    ) {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "📍 ${data.address}",
+                            style = MaterialTheme.typography.bodyMedium.copy(fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        RatingBar(rating = (data.rating ?: 0.0).toFloat())
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "About",
+                            style = MaterialTheme.typography.headlineMedium.copy(fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                        )
+                        Text(
+                            text = data.about,
+                            style = MaterialTheme.typography.bodyMedium.copy(fontSize = 16.sp)
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "Including Services",
+                            style = MaterialTheme.typography.headlineMedium.copy(fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = data.service,
+                            style = MaterialTheme.typography.bodyMedium.copy(fontSize = 16.sp)
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "Distance",
+                            style = MaterialTheme.typography.headlineMedium.copy(fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = data.distance.toString() + " km",
+                            style = MaterialTheme.typography.bodyMedium.copy(fontSize = 16.sp)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Coordinates",
+                            style = MaterialTheme.typography.headlineMedium.copy(fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = data.lat.toString() + " - " + data.long.toString(),
+                            style = MaterialTheme.typography.bodyMedium.copy(fontSize = 16.sp)
+                        )
+                        if (data.isCanBron) {
+                            Spacer(modifier = Modifier.height(56.dp))
+                            Button(
+                                onClick = {
+                                    Toast.makeText(context, "Bron now", Toast.LENGTH_SHORT).show()
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(56.dp)
+                            ) {
+                                Text(text = "Book Now", color = Color.White)
+                            }
                         }
                     }
                 }

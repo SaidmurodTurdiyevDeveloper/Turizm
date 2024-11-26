@@ -31,12 +31,14 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -50,8 +52,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import cafe.adriel.voyager.core.annotation.ExperimentalVoyagerApi
-import cafe.adriel.voyager.core.lifecycle.LifecycleEffectOnce
 import cafe.adriel.voyager.hilt.getViewModel
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
@@ -59,7 +59,7 @@ import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.bumptech.glide.integration.compose.placeholder
 import us.smt.turizm.R
-import us.smt.turizm.domen.model.PlaceData
+import us.smt.turizm.domen.model.PlaceDetails
 
 object HomeTab : Tab {
     private fun readResolve(): Any = HomeTab
@@ -71,12 +71,11 @@ object HomeTab : Tab {
             icon = rememberVectorPainter(Icons.Default.Home)
         )
 
-    @OptIn(ExperimentalVoyagerApi::class)
     @Composable
     override fun Content() {
         val viewModel: HomeViewModel = getViewModel()
         val state by viewModel.state.collectAsState()
-        LifecycleEffectOnce {
+        LaunchedEffect(key1 = Unit) {
             viewModel.onAction(HomeIntent.Init)
         }
         PlaceExplorerScreen(
@@ -115,50 +114,65 @@ fun PlaceExplorerScreen(
                 onAction(HomeIntent.OpenSearch)
             }
         }
-        item {
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Text(
-                modifier = Modifier.padding(horizontal = 16.dp),
-                text = "Popular Places",
-                style = MaterialTheme.typography.headlineMedium.copy(fontSize = 20.sp, fontWeight = FontWeight.Bold)
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            LazyRow(
-                modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                items(state.popular) {
-                    PlaceLargeCardItem(
-                        it,
-                        onDetailClick = {
-                            onAction(HomeIntent.OpenDetails(it.id))
-                        },
-                        onFavoriteClick = { onAction(HomeIntent.ChangeFavourite(it.id)) }
-                    )
+        if (state.isLoading) {
+            item {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(400.dp),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    CircularProgressIndicator()
                 }
+            }
+        } else {
+            item {
 
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Text(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    text = "Popular Places",
+                    style = MaterialTheme.typography.headlineMedium.copy(fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                LazyRow(
+                    modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    items(state.popular) {
+                        PlaceLargeCardItem(
+                            it,
+                            onDetailClick = {
+                                onAction(HomeIntent.OpenDetails(it.id))
+                            },
+                            onFavoriteClick = { onAction(HomeIntent.ChangeFavourite(it)) }
+                        )
+                    }
+
+                }
+            }
+            item {
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    text = "Nearest Places",
+                    style = MaterialTheme.typography.headlineMedium.copy(fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+            items(state.near) {
+                PlaceCard(
+                    it,
+                    onClick = { onAction(HomeIntent.OpenDetails(it.id)) },
+                    onFavoriteClick = { onAction(HomeIntent.ChangeFavourite(it)) }
+                )
             }
         }
-        item {
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                modifier = Modifier.padding(horizontal = 16.dp),
-                text = "Nearest Places",
-                style = MaterialTheme.typography.headlineMedium.copy(fontSize = 20.sp, fontWeight = FontWeight.Bold)
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-        }
-        items(state.near) {
-            PlaceCard(
-                it,
-                onClick = { onAction(HomeIntent.OpenDetails(it.id)) },
-                onFavoriteClick = { onAction(HomeIntent.ChangeFavourite(it.id)) }
-            )
-        }
     }
 
 
@@ -252,7 +266,7 @@ fun SearchBar(
 @OptIn(ExperimentalGlideComposeApi::class)
 @Composable
 fun PlaceCard(
-    placeData: PlaceData,
+    placeDetails: PlaceDetails,
     onClick: () -> Unit,
     onFavoriteClick: () -> Unit
 ) {
@@ -270,9 +284,9 @@ fun PlaceCard(
                 .fillMaxWidth()
         ) {
             GlideImage(
-                model = placeData.imageLink,
+                model = placeDetails.imageLink,
                 contentDescription = null,
-                loading = placeholder(placeData.image),
+                loading = placeholder(placeDetails.image),
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .size(80.dp)
@@ -287,15 +301,15 @@ fun PlaceCard(
             ) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = placeData.name,
+                    text = placeDetails.name,
                     style = MaterialTheme.typography.headlineMedium.copy(fontSize = 18.sp, fontWeight = FontWeight.Bold)
                 )
                 Text(
-                    text = placeData.address,
+                    text = placeDetails.address,
                     style = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp, color = Color.Gray)
                 )
                 Text(
-                    text = placeData.distance.toString(),
+                    text = placeDetails.distance.toString(),
                     style = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp, color = Color.Gray)
                 )
             }
@@ -310,9 +324,9 @@ fun PlaceCard(
                     .background(Color.White, CircleShape)
             ) {
                 Icon(
-                    imageVector = if (placeData.isFavourite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                    imageVector = if (placeDetails.isFavourite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
                     contentDescription = "Favorite",
-                    tint = if (placeData.isFavourite) Color.Red else Color.Gray
+                    tint = if (placeDetails.isFavourite) Color.Red else Color.Gray
                 )
             }
         }
@@ -323,7 +337,7 @@ fun PlaceCard(
 @OptIn(ExperimentalGlideComposeApi::class)
 @Composable
 fun PlaceLargeCardItem(
-    data: PlaceData,
+    data: PlaceDetails,
     onDetailClick: () -> Unit,
     onFavoriteClick: () -> Unit
 ) {

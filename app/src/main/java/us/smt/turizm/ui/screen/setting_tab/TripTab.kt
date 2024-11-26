@@ -5,14 +5,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material3.Button
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -22,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.platform.LocalContext
+import cafe.adriel.voyager.hilt.getViewModel
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
@@ -36,6 +36,7 @@ import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
+import us.smt.turizm.domen.model.PlaceDetails
 
 object TripTab : Tab {
     private fun readResolve(): Any = TripTab
@@ -49,91 +50,22 @@ object TripTab : Tab {
 
     @Composable
     override fun Content() {
-        TripTabScreen()
+        val viewModel = getViewModel<TripViewModel>()
+        val state by viewModel.state.collectAsState()
+        TripTabScreen(
+            state = state,
+            onAction = viewModel::onAction
+        )
     }
 }
 
-@Composable
-private fun TripTabScreen() {
-    Scaffold(
-        floatingActionButton = {
-        },
-        content = { padding ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .background(Color(0xFFF2F4F6))
-            ) {
-                GoogleMapWithLocationPermission()
-            }
-        }
-    )
-}
-
-
-val ancientPlaces = listOf(
-    LatLngData(
-        title = "Samarkand – Registan Square",
-        description = "The most famous historical complex in Central Asia.",
-        lngLatLng = LatLng(39.6542, 66.9741)
-    ),
-    LatLngData(
-        title = "Bukhara – Ark Fortress",
-        description = "The ancient fortress and residence of Bukhara's rulers.",
-        lngLatLng = LatLng(39.7750, 64.4150)
-    ),
-    LatLngData(
-        title = "Khiva – Itchan Kala",
-        description = "The walled inner town of the ancient city, a UNESCO World Heritage site.",
-        lngLatLng = LatLng(41.3787, 60.3625)
-    ),
-    LatLngData(
-        title = "Shakhrisabz – Amir Timur’s Mausoleum (Ak-Saray)",
-        description = "A historical palace built in honor of Amir Timur.",
-        lngLatLng = LatLng(39.0561, 66.8322)
-    ),
-    LatLngData(
-        title = "Tashkent – Hazrati Imam Complex",
-        description = "A complex housing ancient manuscripts and historical landmarks.",
-        lngLatLng = LatLng(41.3221, 69.2363)
-    ),
-    LatLngData(
-        title = "Termez – Fayaztepa",
-        description = "Remains of an ancient Buddhist monastery.",
-        lngLatLng = LatLng(37.2371, 67.2723)
-    ),
-    LatLngData(
-        title = "Karshi – Odina Madrasa",
-        description = "An ancient madrasa that served as a center for learning.",
-        lngLatLng = LatLng(38.8665, 65.7888)
-    ),
-    LatLngData(
-        title = "Nurata – Chashma Complex",
-        description = "A sacred spring and historical mosque located in the mountains.",
-        lngLatLng = LatLng(40.5617, 65.6852)
-    ),
-    LatLngData(
-        title = "Baysun – White Rock Caves (Hissar Mountains)",
-        description = "Natural caves and archaeological sites in a historic region.",
-        lngLatLng = LatLng(38.2086, 67.1671)
-    ),
-    LatLngData(
-        title = "Kokand – Khudoyar Khan Palace",
-        description = "A historical palace built during the Kokand Khanate period.",
-        lngLatLng = LatLng(40.5286, 70.9410)
-    )
-)
-
-data class LatLngData(
-    val title: String,
-    val description: String,
-    val lngLatLng: LatLng
-)
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
-fun GoogleMapWithLocationPermission() {
+fun TripTabScreen(
+    state: TripState,
+    onAction: (TripIntent) -> Unit
+) {
     var hasPermission by remember { mutableStateOf(false) }
     val locationPermissionState = rememberMultiplePermissionsState(
         listOf(
@@ -156,7 +88,16 @@ fun GoogleMapWithLocationPermission() {
 
     // Once permission is granted, show the map
     if (hasPermission) {
-        GoogleMapScreenWithMyLocation()
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0xFFF2F4F6))
+        ) {
+            GoogleMapScreenWithMyLocation(
+                state = state,
+                onAction = onAction
+            )
+        }
     }
 }
 
@@ -198,7 +139,10 @@ fun LocationPermissionScreen(onPermissionGranted: () -> Unit) {
 }
 
 @Composable
-fun GoogleMapScreenWithMyLocation() {
+fun GoogleMapScreenWithMyLocation(
+    state: TripState,
+    onAction: (TripIntent) -> Unit
+) {
     val context = LocalContext.current
     val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
     val cameraPositionState = rememberCameraPositionState()
@@ -214,26 +158,45 @@ fun GoogleMapScreenWithMyLocation() {
         }
     }
 
-    // Ensure that location data is available before showing the map
     if (userLocation != null) {
+        LaunchedEffect(
+            key1 = Unit
+        ) {
+            onAction(TripIntent.Init)
+        }
         GoogleMap(
             modifier = Modifier.fillMaxSize(),
             cameraPositionState = cameraPositionState,
             uiSettings = MapUiSettings(myLocationButtonEnabled = true),
             properties = MapProperties(isMyLocationEnabled = true)
         ) {
-            ancientPlaces.forEach {
-                Marker(
-                    state = MarkerState(position = it.lngLatLng),
-                    title = it.title,
-                    snippet = it.description
-                )
+            if (!state.isLoading) {
+                Markers(list = state.tripList, onAction = onAction)
             }
         }
     }
 }
 
-@SuppressLint("MissingPermission") // Ensure location permission is handled
+@Composable
+fun Markers(list: List<PlaceDetails>, onAction: (TripIntent) -> Unit) {
+    list.forEach { placeDetails ->
+        Marker(
+            state = MarkerState(
+                position = LatLng(
+                    placeDetails.lat ?: 0.0,
+                    placeDetails.long ?: 0.0
+                )
+            ),
+            title = placeDetails.name,
+            snippet = placeDetails.service,
+            onInfoWindowClick = {
+                onAction(TripIntent.OpenItem(placeDetails.id))
+            }
+        )
+    }
+}
+
+@SuppressLint("MissingPermission")
 fun getCurrentLocation(
     fusedLocationClient: FusedLocationProviderClient,
     send: (LatLng) -> Unit

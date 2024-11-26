@@ -4,10 +4,12 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
@@ -19,6 +21,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -119,14 +122,28 @@ fun SearchContent(
 
             }
         }
-        items(state.list) {
-            PlaceCard(
-                it,
-                onClick = { onAction(SearchIntent.OpenDetails(it.id)) },
-                onFavoriteClick = {
-                    onAction(SearchIntent.ChangeFavourite(it.id))
+        if (state.isLoading) {
+            item {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(400.dp),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    CircularProgressIndicator()
                 }
-            )
+            }
+        } else {
+            items(state.list) {
+                PlaceCard(
+                    it,
+                    onClick = { onAction(SearchIntent.OpenDetails(it.id)) },
+                    onFavoriteClick = {
+                        onAction(SearchIntent.ChangeFavourite(it.id))
+                    }
+                )
+            }
         }
     }
 }

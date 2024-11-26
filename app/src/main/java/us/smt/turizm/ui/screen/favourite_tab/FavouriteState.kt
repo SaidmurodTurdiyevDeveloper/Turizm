@@ -1,7 +1,8 @@
 package us.smt.turizm.ui.screen.favourite_tab
 
-import us.smt.turizm.domen.model.PlaceData
+import us.smt.turizm.domen.model.PlaceDetails
 
 data class FavouriteState(
-    val favourites: List<PlaceData> = emptyList()
+    val isLoading: Boolean = true,
+    val favourites: List<PlaceDetails> = emptyList()
 )

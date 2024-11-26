@@ -1,10 +1,11 @@
 package us.smt.turizm.ui.screen.home_tab
 
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
+import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import us.smt.turizm.data.database.local.shared.LocalStorage
-import us.smt.turizm.domen.model.PlaceData
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import us.smt.turizm.data.database.remote.FireBaseHelper
+import us.smt.turizm.domen.model.PlaceDetails
 import us.smt.turizm.ui.screen.details.DetailsScreen
 import us.smt.turizm.ui.screen.search.SearchScreen
 import us.smt.turizm.ui.utils.AppNavigator
@@ -12,56 +13,62 @@ import us.smt.turizm.ui.utils.BaseViewModel
 import javax.inject.Inject
 
 @HiltViewModel
-class HomeViewModel @Inject constructor(navigator: AppNavigator, private val localStorage: LocalStorage) : BaseViewModel<HomeState, HomeIntent>(HomeState(), navigator) {
+class HomeViewModel @Inject constructor(navigator: AppNavigator) : BaseViewModel<HomeState, HomeIntent>(HomeState(), navigator) {
 
     override fun onAction(intent: HomeIntent) {
         when (intent) {
             HomeIntent.Init -> initData()
             is HomeIntent.OpenDetails -> navigate(DetailsScreen(intent.id))
             HomeIntent.OpenSearch -> navigate(SearchScreen())
-            is HomeIntent.ChangeFavourite -> favourite(intent.id)
+            is HomeIntent.ChangeFavourite -> favourite(intent.data)
             HomeIntent.Back -> back()
         }
     }
 
-    private val gson = Gson()
-    private var list = emptyList<PlaceData>()
 
     init {
         initData()
     }
 
     private fun initData() {
-        val typeToken = object : TypeToken<List<PlaceData>>() {}.type
-        list = gson.fromJson(localStorage.allData, typeToken)
-        val listPopular = list.filter {
-            (it.rating ?: 0.0) > 4.8
+        viewModelScope.launch(Dispatchers.IO) {
+            val list = FireBaseHelper.getInstance().getAllData()
+            val listPopular = list.filter {
+                (it.rating ?: 0.0) > 4.8
+            }
+            val near = list.filter {
+                it.distance < 2
+            }
+            update(
+                state = state.value.copy(
+                    popular = listPopular,
+                    near = near,
+                    isLoading = false
+                )
+            )
         }
-        val near = list.filter {
-            it.distance < 2
-        }
-        update(
-            state = state.value.copy(popular = listPopular, near = near)
-        )
     }
 
-    private fun favourite(id: String) {
-        list = list.map {
-            if (id == it.id) {
+    private fun favourite(data: PlaceDetails) {
+        val listPopular = state.value.popular.map {
+            if (data.id == it.id) {
                 it.copy(isFavourite = it.isFavourite.not())
-            } else
-                it
-        }
-        localStorage.allData = gson.toJson(list)
-
-        val listPopular = list.filter {
-            (it.rating ?: 0.0) > 4.0
+            } else it
         }.toMutableList()
-        val near = list.filter {
-            it.distance < 10
+        val near = state.value.near.map {
+            if (data.id == it.id) {
+                it.copy(isFavourite = it.isFavourite.not())
+            } else it
         }.toMutableList()
         update(
             state = state.value.copy(popular = listPopular, near = near)
         )
+        viewModelScope.launch(Dispatchers.IO) {
+            data.copy(
+                isFavourite = !data.isFavourite
+            ).let {
+                FireBaseHelper.getInstance().updatePlace(it)
+            }
+        }
     }
 }

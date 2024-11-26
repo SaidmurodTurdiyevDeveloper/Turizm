@@ -1,10 +1,11 @@
 package us.smt.turizm.ui.screen.search
 
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
+import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import us.smt.turizm.data.database.local.shared.LocalStorage
-import us.smt.turizm.domen.model.PlaceData
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import us.smt.turizm.data.database.remote.FireBaseHelper
+import us.smt.turizm.domen.model.PlaceDetails
 import us.smt.turizm.ui.screen.details.DetailsScreen
 import us.smt.turizm.ui.utils.AppNavigator
 import us.smt.turizm.ui.utils.BaseViewModel
@@ -12,7 +13,7 @@ import us.smt.turizm.ui.utils.TextFieldData
 import javax.inject.Inject
 
 @HiltViewModel
-class SearchViewModel @Inject constructor(navigator: AppNavigator, private val localStorage: LocalStorage) : BaseViewModel<SearchState, SearchIntent>(SearchState(), navigator) {
+class SearchViewModel @Inject constructor(navigator: AppNavigator) : BaseViewModel<SearchState, SearchIntent>(SearchState(), navigator) {
 
     override fun onAction(intent: SearchIntent) {
         when (intent) {
@@ -24,8 +25,7 @@ class SearchViewModel @Inject constructor(navigator: AppNavigator, private val l
         }
     }
 
-    private val gson = Gson()
-    private var list = emptyList<PlaceData>()
+    private var list = emptyList<PlaceDetails>()
 
     private fun onChangeText(text: String) {
         if (text.isBlank()) {
@@ -33,60 +33,66 @@ class SearchViewModel @Inject constructor(navigator: AppNavigator, private val l
                 state = state.value.copy(
                     search = TextFieldData(
                         text = text
-                    ), list = list
+                    ), list = list,
+                    isLoading = false
                 )
             )
         } else {
-            val exist = mutableListOf<PlaceData>()
-            val aboutLs = mutableListOf<PlaceData>()
-            val place = mutableListOf<PlaceData>()
-            val notExistAboutLs = mutableListOf<PlaceData>()
+            update(
+                state = state.value.copy(
+                    isLoading = true,
+                    search = TextFieldData(
+                        text = text
+                    )
+                )
+            )
+            viewModelScope.launch {
 
-            for (it in list) {
-                val isNameMatch = it.name.contains(text, true)
-                val isAboutMatch = it.about.contains(text, false)
-                val isAddressMatch = it.address.contains(text, false)
+                val exist = mutableListOf<PlaceDetails>()
+                val aboutLs = mutableListOf<PlaceDetails>()
+                val place = mutableListOf<PlaceDetails>()
+                val notExistAboutLs = mutableListOf<PlaceDetails>()
 
-                if (isNameMatch) {
-                    exist.add(it)
-                } else {
-                    if (isAboutMatch) {
-                        aboutLs.add(it)
-                    } else if (isAddressMatch) {
-                        place.add(it)
+                for (it in list) {
+                    val isNameMatch = it.name.contains(text, true)
+                    val isAboutMatch = it.about.contains(text, false)
+                    val isAddressMatch = it.address.contains(text, false)
+
+                    if (isNameMatch) {
+                        exist.add(it)
                     } else {
-                        notExistAboutLs.add(it)
+                        if (isAboutMatch) {
+                            aboutLs.add(it)
+                        } else if (isAddressMatch) {
+                            place.add(it)
+                        } else {
+                            notExistAboutLs.add(it)
+                        }
                     }
                 }
+
+                val all = ArrayList(exist)
+                all.addAll(aboutLs)
+                all.addAll(place)
+                update(
+                    state = state.value.copy(list = all, isLoading = false)
+                )
             }
-
-            val all = ArrayList(exist)
-            all.addAll(aboutLs)
-            all.addAll(place)
-
-            update(
-                state = state.value.copy(search = TextFieldData(text = text), list = all)
-            )
 
         }
     }
 
     private fun loadList() {
-        val typeToken = object : TypeToken<List<PlaceData>>() {}.type
-        list = gson.fromJson(localStorage.allData, typeToken)
-        update(
-            state = state.value.copy(list = list)
-        )
+        viewModelScope.launch {
+            list = FireBaseHelper.getInstance().getAllData()
+            update(
+                state = state.value.copy(list = list, isLoading = false)
+            )
+        }
 
     }
 
     private fun favourite(id: String) {
-        list = list.map {
-            if (id == it.id) {
-                it.copy(isFavourite = it.isFavourite.not())
-            } else it
-        }
-        localStorage.allData = gson.toJson(list)
         val current = state.value.list.map {
             if (id == it.id) {
                 it.copy(isFavourite = it.isFavourite.not())
@@ -95,5 +101,16 @@ class SearchViewModel @Inject constructor(navigator: AppNavigator, private val l
         update(
             state = state.value.copy(list = current)
         )
+        viewModelScope.launch(Dispatchers.IO) {
+            val findData = list.find { it.id == id }
+            list = list.filter {
+                it.id != id
+            }
+            findData?.let {
+                FireBaseHelper.getInstance().updatePlace(findData.copy(
+                    isFavourite = findData.isFavourite.not()
+                ))
+            }
+        }
     }
 }

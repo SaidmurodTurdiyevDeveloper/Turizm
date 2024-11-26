@@ -1,20 +1,19 @@
 package us.smt.turizm.ui.screen.details
 
-import android.util.Log
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
+import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import us.smt.turizm.data.database.local.shared.LocalStorage
-import us.smt.turizm.domen.model.PlaceData
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import us.smt.turizm.data.database.remote.FireBaseHelper
+import us.smt.turizm.domen.model.PlaceDetails
 import us.smt.turizm.ui.utils.AppNavigator
 import us.smt.turizm.ui.utils.BaseViewModel
 import javax.inject.Inject
 
 @HiltViewModel
 class DetailsViewmodel @Inject constructor(
-    private val localStorage: LocalStorage,
     navigator: AppNavigator
-) : BaseViewModel<PlaceData?, DetailsIntent>(null, navigator) {
+) : BaseViewModel<PlaceDetails?, DetailsIntent>(null, navigator) {
     override fun onAction(intent: DetailsIntent) {
         when (intent) {
             DetailsIntent.Back -> back()
@@ -23,19 +22,14 @@ class DetailsViewmodel @Inject constructor(
         }
     }
 
-    private val gson = Gson()
-    private var list = emptyList<PlaceData>()
 
     private fun getData(id: String) {
-        Log.d("TagTagTga","getData")
-        val typeToken = object : TypeToken<List<PlaceData>>() {}.type
-        list = gson.fromJson(localStorage.allData, typeToken)
-        val data = list.find {
-            it.id == id
+        viewModelScope.launch(Dispatchers.IO) {
+            val data = FireBaseHelper.getInstance().getPlaceById(id)
+            update(
+                state = data
+            )
         }
-        update(
-            state = data
-        )
     }
 
     private fun onChangeFavourite() {
@@ -44,13 +38,11 @@ class DetailsViewmodel @Inject constructor(
                 isFavourite = state.value?.isFavourite?.not() ?: false
             )
         )
-        list = list.map {
-            if (it.id == state.value?.id) {
-                state.value ?: it
-            } else
-                it
+        viewModelScope.launch(Dispatchers.IO) {
+            state.value?.let {
+                FireBaseHelper.getInstance().updatePlace(it)
+            }
         }
-        localStorage.allData=gson.toJson(list)
     }
 
 }

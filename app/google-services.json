@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "502523411760",
+    "project_id": "taxi-3ea16",
+    "storage_bucket": "taxi-3ea16.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:502523411760:android:1143ea6861b7649f7f9cf5",
+        "android_client_info": {
+          "package_name": "us.smt.turizm"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "502523411760-jgc77l3bn9k1nbpjm1mq6ba9hvshet1b.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCO64Yk6K3_GL3iCdu83lQRLU34U2r04QE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "502523411760-jgc77l3bn9k1nbpjm1mq6ba9hvshet1b.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "502523411760-4m91dashkkc1rk7o5jd926hmqt4jfn0i.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.taxiProject"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
